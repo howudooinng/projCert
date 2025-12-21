@@ -3,7 +3,7 @@ pipeline {
     stages { 
         stage('Checkout') { 
             steps { 
-                git branch: 'main', url: 'https://github.com/pannamal2513/appleProj.git' 
+                git branch: 'main', url: 'https://github.com/howudooinng/projCert.git' 
             } 
         }         
         stage('Build Docker Image') { 
