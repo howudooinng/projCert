@@ -1,33 +1,37 @@
-pipeline { 
-    agent Docker 
-    stages { 
-        stage('Checkout') { 
-            steps { 
-                git branch: 'main', url: 'https://github.com/howudooinng/projCert.git' 
-            } 
-        }         
-        stage('Build Docker Image') { 
-            steps { 
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/howudooinng/projCert.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
                 sh 'docker build -t php-ubuntu:18.04 .'
-            } 
-        } 
-        stage('Deploy Container') { 
-            steps { 
-                sh ''' 
-                docker ps -q --filter "name=php-ubuntu" | xargs -r docker stop 
-                docker ps -aq --filter "name=php-ubuntu" | xargs -r docker rm 
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                sh '''
+                docker ps -q --filter "name=php-ubuntu" | xargs -r docker stop
+                docker ps -aq --filter "name=php-ubuntu" | xargs -r docker rm
                 docker run -d --name php-ubuntu -p 8083:80 php-ubuntu:18.04
-                ''' 
-            } 
-        } 
-    } 
-    post { 
-        failure { 
-            echo 'Build failed! Cleaning up containers...' 
-            sh ''' 
-            docker ps -q --filter "name=php-ubuntu:18.04" | xargs -r docker stop 
-            docker ps -aq --filter "name=php-ubuntu:18.04" | xargs -r docker rm 
-            ''' 
-        } 
-    } 
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Build failed! Cleaning up containers...'
+            sh '''
+            docker ps -q --filter "name=php-ubuntu" | xargs -r docker stop
+            docker ps -aq --filter "name=php-ubuntu" | xargs -r docker rm
+            '''
+        }
+    }
 }
