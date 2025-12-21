@@ -1,24 +1,39 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:26-cli'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     stages {
-        stage('Build Docker Image') {
+
+        stage('Install Ansible if missing') {
             steps {
-                sh 'docker build -t php-ubuntu:18.04 .'
+                sh '''
+                ansible --version || (
+                    sudo apt update &&
+                    sudo apt install -y ansible
+                )
+                '''
             }
         }
 
-        stage('Deploy Container') {
+        stage('Install Docker on Test Server') {
+            steps {
+                sh 'ansible-playbook ansible/install_docker.yml -i ansible/hosts'
+            }
+        }
+
+        stage('Deploy PHP App') {
+            steps {
+                sh 'ansible-playbook ansible/deploy_php_app.yml -i ansible/hosts'
+            }
+        }
+
+        stage('Cleanup on Failure') {
+            when {
+                expression { currentBuild.currentResult == 'FAILURE' }
+            }
             steps {
                 sh '''
-                docker ps -q --filter "name=php-ubuntu" | xargs -r docker stop
-                docker ps -aq --filter "name=php-ubuntu" | xargs -r docker rm
-                docker run -d --name php-ubuntu -p 8083:80 php-ubuntu:18.04
+                ansible test -i ansible/hosts -m docker_container \
+                  -a "name=phpapp state=absent" || true
                 '''
             }
         }
